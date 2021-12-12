@@ -1,0 +1,1 @@
+export { default as RestInterface } from './rest-interface';

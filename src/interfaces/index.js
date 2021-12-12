@@ -1,0 +1,1 @@
+export { RestInterface } from './rest';

@@ -23,6 +23,8 @@
     "nodemon": "^2.0.15"
   },
   "dependencies": {
+    "restify": "^8.6.0",
+    "restify-plugins": "^1.6.0",
     "yup": "^0.32.11"
   }
 }

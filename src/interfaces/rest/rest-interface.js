@@ -1,15 +1,18 @@
 import restify from 'restify';
 import restifyPlugins from 'restify-plugins';
+import errs from 'restify-errors';
 import { Contact, Message } from '../../entities';
 import { EmailService } from '../../usecases';
 import { SendGrid } from '../../infrastructures';
+
+// ImprovementOpportunity: better organize the rest folder, e.g. create routes file.
 
 class RestInterface {
     constructor(config, analytics) {
         this._config = config;
         this._server = restify.createServer();
         this._analytics = analytics;
-        this._emailService = new EmailService(new SendGrid());
+        this._emailService = new EmailService(new SendGrid(this._config.sendGrid));
         this._addMiddlewares();
         this._addRoutes();
         this._startServer();
@@ -23,6 +26,12 @@ class RestInterface {
 
     _addRoutes() {
         this._server.post('/email', async (req, res, next) => {
+            if (!req.is('application/json')) {
+                next(new errs.InvalidContentError("Expects 'application/json'"));
+                return;
+            }
+
+
             const { to, to_name, from, from_name, subject, body } = req.body;
             const sender = new Contact(from_name, from);
             const recipient = new Contact(to_name, to);
@@ -31,24 +40,28 @@ class RestInterface {
                 onSuccess: () => {
                     this._analytics.relayInfo('success');
                     res.send("All good");
+                    next();
                 },
                 onDeliveryError: () => {
-                    this._analytics.relayError('Unable to deliver message');
-                    res.send('Internal Server Error');
+                    next(new errs.InternalError('Encountered Error while attempting to send email'));
+                    // this._analytics.relayError('Unable to deliver message');
                 },
                 onInvalidRecipent: () => {
-                    this._analytics.relayInfo('Unable to deliver message');
-                    res.send("Bad Request: Invalid recipient")
+                    next(new errs.BadRequestError('Invalid to or to_name'));
+                    // this._analytics.relayInfo('Unable to deliver message');
+                    // res.send("Bad Request: Invalid recipient")
                 },
                 onInvalidSender: () => {
-                    this._analytics.relayInfo('Unable to deliver message');
-                    res.send("Bad Request: Invalid sender")
+                    next(new errs.BadRequestError('Invalid from or from_name'));
+                    // this._analytics.relayInfo('Unable to deliver message');
+                    // res.send("Bad Request: Invalid sender")
                 },
                 onInvalidMessage: () => {
-                    this._analytics.relayInfo('Unable to deliver message');
-                    res.send("Bad Request: Invalid message")
+                    next(new errs.BadRequestError('Invalid subject or body'));
+                    // this._analytics.relayInfo('Unable to deliver message');
+                    // res.send("Bad Request: Invalid message")
                 },
-            })
+            });
             next();
         })
     }

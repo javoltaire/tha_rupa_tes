@@ -30,11 +30,9 @@ class EmailService {
 
         try {
             await this._courier.sendMessage(sender, recipient, message);
-            console.log('suuuucccceesssss')
             onSuccess(sender, recipient, message);
         } catch (e) {
-            console.log('errrorrrrrrrrr')
-            onDeliveryError(e)
+            onDeliveryError(e);
         }
     }
 }

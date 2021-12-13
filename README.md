@@ -76,10 +76,11 @@ $npm run dev
 ### Build with
 
 - Node.js
+- yup
+- restify
 - npm
 - nvm
 - babel
-- yup
 
 ### Endpoints
 

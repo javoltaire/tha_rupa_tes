@@ -5,9 +5,10 @@ import { EmailService } from '../../usecases';
 import { SendGrid } from '../../infrastructures';
 
 class RestInterface {
-    constructor(config) {
+    constructor(config, analytics) {
         this._config = config;
         this._server = restify.createServer();
+        this._analytics = analytics;
         this._emailService = new EmailService(new SendGrid());
         this._addMiddlewares();
         this._addRoutes();
@@ -27,11 +28,26 @@ class RestInterface {
             const recipient = new Contact(to_name, to);
             const message = new Message(subject, body);
             await this._emailService.sendEmail(sender, recipient, message, {
-                onSuccess: () => res.send("All good"),
-                onDeliveryError: () => res.send('Internal Server Error'),
-                onInvalidRecipent: () => res.send("Bad Request: Invalid recipient"),
-                onInvalidSender: () => res.send("Bad Request: Invalid sender"),
-                onInvalidMessage: () => res.send("Bad Request: Invalid message"),
+                onSuccess: () => {
+                    this._analytics.relayInfo('success');
+                    res.send("All good");
+                },
+                onDeliveryError: () => {
+                    this._analytics.relayError('Unable to deliver message');
+                    res.send('Internal Server Error');
+                },
+                onInvalidRecipent: () => {
+                    this._analytics.relayInfo('Unable to deliver message');
+                    res.send("Bad Request: Invalid recipient")
+                },
+                onInvalidSender: () => {
+                    this._analytics.relayInfo('Unable to deliver message');
+                    res.send("Bad Request: Invalid sender")
+                },
+                onInvalidMessage: () => {
+                    this._analytics.relayInfo('Unable to deliver message');
+                    res.send("Bad Request: Invalid message")
+                },
             })
             next();
         })

@@ -13,7 +13,6 @@ class MockCourier extends Courier {
 
     async sendMessage(sender, recipient, message) {
         return new Promise((resolve, reject) => setTimeout(() => {
-            console.log('helllslsllsllsllooooooo')
             try {
                 resolve(this._mockSend());
             } catch (e) {

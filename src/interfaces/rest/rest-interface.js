@@ -1,10 +1,14 @@
 import restify from 'restify';
 import restifyPlugins from 'restify-plugins';
+import { Contact, Message } from '../../entities';
+import { EmailService } from '../../usecases';
+import { SendGrid } from '../../infrastructures';
 
 class RestInterface {
     constructor(config) {
         this._config = config;
         this._server = restify.createServer();
+        this._emailService = new EmailService(new SendGrid());
         this._addMiddlewares();
         this._addRoutes();
         this._startServer();
@@ -17,8 +21,18 @@ class RestInterface {
     }
 
     _addRoutes() {
-        this._server.post('/email', (req, res, next) => {
-            res.send(req.body);
+        this._server.post('/email', async (req, res, next) => {
+            const { to, to_name, from, from_name, subject, body } = req.body;
+            const sender = new Contact(from_name, from);
+            const recipient = new Contact(to_name, to);
+            const message = new Message(subject, body);
+            await this._emailService.sendEmail(sender, recipient, message, {
+                onSuccess: () => res.send("All good"),
+                onDeliveryError: () => res.send('Internal Server Error'),
+                onInvalidRecipent: () => res.send("Bad Request: Invalid recipient"),
+                onInvalidSender: () => res.send("Bad Request: Invalid sender"),
+                onInvalidMessage: () => res.send("Bad Request: Invalid message"),
+            })
             next();
         })
     }

@@ -24,6 +24,7 @@ MVP:
 - Configurable service provider in order to recover quickly from a potential outage
 - Fail fast if config is bad or missing info, informing of the error
 - Fail fast if API keys for service providers are not set, informing of the error
+- enable https
 
 Additional
 

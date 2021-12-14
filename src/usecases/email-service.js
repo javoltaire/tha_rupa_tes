@@ -8,7 +8,8 @@ class EmailService {
         onDeliveryError = () => { },
         onInvalidRecipent = () => { },
         onInvalidSender = () => { },
-        onInvalidMessage = () => { }
+        onInvalidMessage = () => { },
+        onUnauthorizedError = () => { }
     } = {}) {
         const senderError = sender.validate();
         if (senderError) {
@@ -32,7 +33,11 @@ class EmailService {
             await this._courier.sendMessage(sender, recipient, message);
             onSuccess(sender, recipient, message);
         } catch (e) {
-            onDeliveryError(e);
+            if (e.response?.status === 401) {
+                onUnauthorizedError(e)
+            } else {
+                onDeliveryError(e);
+            }
         }
     }
 }

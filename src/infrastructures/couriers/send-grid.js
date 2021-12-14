@@ -1,15 +1,10 @@
 import Courier from "./courier";
 import axios from 'axios';
 
-// ImpromentPotential: abstract axios library in order to make it easy to switch out.
-
 class SendGrid extends Courier {
     constructor(options) {
         super();
-        this._options = { 
-            ...options,
-            host: 'https://sendgrid.com/v3',
-        };
+        this._options = options;
     }
 
     async sendMessage(sender, recipient, message) {
@@ -32,9 +27,11 @@ class SendGrid extends Courier {
             ],
           };
 
-        return axios.post(url, data, { headers: {
+        return axios.post(url, data, { 
+          headers: {
             Authorization: `Bearer ${this._options.key}`,
-        }});
+          }
+        });
     }
 }
 

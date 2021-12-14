@@ -1,5 +1,12 @@
 import CustomValidationError from '../entities/validation-error';
 
+const escapeHtml = unsafe => unsafe
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+
 const schemaValidate = (value, schema) => {
     try {
         schema.validateSync(value);
@@ -12,4 +19,4 @@ const schemaValidate = (value, schema) => {
     return null;
 }
 
-export { schemaValidate };
+export { escapeHtml, schemaValidate };

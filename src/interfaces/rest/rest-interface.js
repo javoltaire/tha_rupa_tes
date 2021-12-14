@@ -3,16 +3,32 @@ import restifyPlugins from 'restify-plugins';
 import errs from 'restify-errors';
 import { Contact, Message } from '../../entities';
 import { EmailService } from '../../usecases';
-import { SendGrid } from '../../infrastructures';
+import { SendGrid, MailGun } from '../../infrastructures';
 
-// ImprovementOpportunity: better organize the rest folder, e.g. create routes file.
+const SUPPORTED_COURIERS = {
+    mailGun: { cstr: MailGun, envLookup: 'MG_API_KEY' },
+    sendGrid: { cstr: SendGrid, envLookup: 'SG_API_KEY' },
+};
+
+const createCourier = config => {
+    const type = config.email_providers.default;
+    const { cstr: Courier, envLookup } = SUPPORTED_COURIERS[type] || {};
+    if (!Courier) {
+        throw new Error(`Unsupported Courier Service, please use one of the following: ${Object.keys(SUPPORTED_COURIERS).join(',')}`);
+    }
+
+    const options = config.email_providers.services[type];
+    return new Courier({ ...options, key: process.env[envLookup] });
+}
 
 class RestInterface {
     constructor(config, analytics) {
         this._config = config;
         this._server = restify.createServer();
         this._analytics = analytics;
-        this._emailService = new EmailService(new SendGrid(this._config.sendGrid));
+
+        const courier = createCourier(config)
+        this._emailService = new EmailService(courier);
         this._addMiddlewares();
         this._addRoutes();
         this._startServer();
@@ -42,25 +58,26 @@ class RestInterface {
                     res.send("All good");
                     next();
                 },
-                onDeliveryError: () => {
+                onDeliveryError: e => {
+                    this._analytics.relayError('InternalServerError: Unable to deliver message');
                     next(new errs.InternalError('Encountered Error while attempting to send email'));
-                    // this._analytics.relayError('Unable to deliver message');
                 },
                 onInvalidRecipent: () => {
+                    this._analytics.relayInfo('ValidationError: Unable to deliver message, invalid to or to_name');
                     next(new errs.BadRequestError('Invalid to or to_name'));
-                    // this._analytics.relayInfo('Unable to deliver message');
-                    // res.send("Bad Request: Invalid recipient")
                 },
                 onInvalidSender: () => {
+                    this._analytics.relayInfo('ValidationError: Unable to deliver message, invalid from or from_name');
                     next(new errs.BadRequestError('Invalid from or from_name'));
-                    // this._analytics.relayInfo('Unable to deliver message');
-                    // res.send("Bad Request: Invalid sender")
                 },
                 onInvalidMessage: () => {
+                    this._analytics.relayInfo('ValidationError: Unable to deliver message, invalid subject or body');
                     next(new errs.BadRequestError('Invalid subject or body'));
-                    // this._analytics.relayInfo('Unable to deliver message');
-                    // res.send("Bad Request: Invalid message")
                 },
+                onUnauthorizedError: () => {
+                    this._analytics.relayInfo('Unable to deliver message');
+                    next(new errs.UnauthorizedError('Unthorized, please make sure your email is registered on mailgun or send grid'));
+                }
             });
             next();
         })

@@ -13,30 +13,38 @@ to a different provider without affecting your customers.
 
 MVP:
 
-- A `/email` endpoint that accepts `POST` requests in order to send an email
-- Safe handle of HTML content in the body of the email
-- Basic Responses to `/email` signaling success or failures
-- Safe handling of unsupported endpoints
-- Safe handling of unsuported METHOD to `/email`
-- Safe handling of non-json request body data
-- Safe handling of CORS requests since endpoint is public
-- Service provider outage detection and notification/timeouts
-- Configurable service provider in order to recover quickly from a potential outage
-- Fail fast if config is bad or missing info, informing of the error
-- Fail fast if API keys for service providers are not set, informing of the error
-- enable https
+- [x] A `/email` endpoint that accepts `POST` requests in order to send an email
+- [x] Safe handle of HTML content in the body of the email
+- [x] Basic Responses to `/email` signaling success or failures
+- [x] Safe handling of unsupported endpoints
+- [x] Safe handling of unsuported METHOD to `/email`
+- [x] Safe handling of non-json request body data
+- [x] Service provider outage detection and notification/timeouts
+- [x] Configurable service provider in order to recover quickly from a potential outage
 
 Additional
 
-- Informative responses to `/email` endoing with detailed failure messages
+- Informative responses to `/email` endoing with detailed failure messages, see [error responses](#error-responses)
+- Safe handling of CORS requests since endpoint is public
+- Fail fast if config is bad or missing info, informing of the error
+- Fail fast if API keys for service providers are not set, informing of the error
+- enable https
 - Verbose logging for debugging purposes
 - DOS attack detection, too many requests (429 Code)
 - Large request body processing error detection (413)
 
-For testing purposes
+For testing purposes (Additional)
 
 - Potentially, a method to simulate service provider failures.
 - Potentially, a method to check if a service provider is up or down.`npm run dev`
+
+Coding Improvements:
+
+- Abstract axios library in order to make it easy to switch out.
+- Add more documentation, e.g. jsdoc
+- use dotenv for storing api keys ensuring it's in the .gitignore.
+- Unit tests for non-business logic code
+- Better organization for the rest interface, e.g. having a routes file.
 
 ### TBD
 
@@ -53,8 +61,9 @@ For testing purposes
 #### Prerequisites
 
 - [Install nvm+npm+node](https://github.com/nvm-sh/nvm)
-- [Sign up and obtain an API key from SendGrid](https://sendgrid.com/)
-- [Sign up and obtain an API key from MainGun](https://www.mailgun.com/)
+- Sign up and obtain an API key from [SendGrid](https://sendgrid.com/) and add a [verified sender](https://docs.sendgrid.com/ui/sending-email/sender-verification)
+- Sign up and obtain an API key from [MainGun](https://www.mailgun.com/)
+- Install your favorite http client testing app: [postman](https://www.postman.com/), [insomnia](https://insomnia.rest/)
 
 #### Installation
 
@@ -62,6 +71,7 @@ Below are the steps to build the application:
 
 1. Clone the repo: `git clone https://github.com/javoltaire/tha_rupa_tes.git`
 2. Install dependencies: `npm install`
+3. Modify `/src/config/config.dev.js` to update configs for service providers. e.g. a valid domain from your mailgun account.
 
 #### Usage
 
@@ -70,14 +80,31 @@ Below are the steps to build the application:
 An HTTP server that listens on a pre-configured port. See [Endpoints](#endpoints) for a list of routes. To run the server, use:
 
 ```bash
-$npm run dev
+$SG_API_KEY=<SENDGRID_API_KEY> MG_API_KEY=<MAILGUN_API_KEY> npm run dev
+```
+
+NOTE the `SG_API_KEY` and `MG_API_KEY` environment variables
+
+In case of a provider (courier) is down, modify `/src/config/config.dev.js` to change `email_providers.default` to `sendGrid` or `mailGun`.
+
+Now open up your favorite http client and make post request to [`/email`](#sending-an-email). Keep scrolling for the endpoints documentation section.
+
+### Architecture
+
+This project was implemented using [clean architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html) by Robert C. Martin (Uncle Bob).
+
+#### Project Layout
+
+```text
+TODO: <Show file structure here.>
 ```
 
 ### Build with
 
 - Node.js
-- yup
-- restify
+- yup (for validation)
+- restify (quick api setup)
+- axios (http client library)
 - npm
 - nvm
 - babel
@@ -167,14 +194,4 @@ OR
   {
     "message": "Unable to complete request, please try again later"
   }
-```
-
-### Architecture
-
-This project was implemented using the [clean architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html) by Robert C. Martin (Uncle Bob).
-
-#### Project Layout
-
-```text
-TODO: <Show file structure here.>
 ```

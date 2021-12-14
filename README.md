@@ -41,6 +41,7 @@ For testing purposes (Additional)
 Coding Improvements:
 
 - Abstract axios library in order to make it easy to switch out.
+- swich dev branch to main as the default branch.
 - Add more documentation, e.g. jsdoc
 - use dotenv for storing api keys ensuring it's in the .gitignore.
 - Unit tests for non-business logic code
@@ -88,6 +89,10 @@ NOTE the `SG_API_KEY` and `MG_API_KEY` environment variables
 In case of a provider (courier) is down, modify `/src/config/config.dev.js` to change `email_providers.default` to `sendGrid` or `mailGun`.
 
 Now open up your favorite http client and make post request to [`/email`](#sending-an-email). Keep scrolling for the endpoints documentation section.
+
+#### Potential Known Issue
+
+- Despite using a verified sender through send grid, you may still get an unauthorized response. This will need to be further investigated.
 
 ### Architecture
 
